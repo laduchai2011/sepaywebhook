@@ -131,6 +131,7 @@ class Handle_SepayWebhook {
                     // send message
                     const agentPay = result2.recordset[0]
                     sendStringMessage('agentPay_dev', JSON.stringify(agentPay))
+                    return
                 } catch (error) {
                     console.error(error);
                     res.status(500).json({
@@ -147,7 +148,7 @@ class Handle_SepayWebhook {
                 payHookBody.agentPayId = null;
                 payHookBody.orderId = orderId;
                 mutateDB_createPayHook.setCreatePayHookBody(payHookBody);
-                break; 
+                break;
             } 
             default: { 
                 //statements; 

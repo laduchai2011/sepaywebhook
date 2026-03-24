@@ -1,5 +1,5 @@
 docker stop sepaywebhook_container
 docker rm sepaywebhook_container
 docker build -t sepaywebhook .
-docker run -dit --name sepaywebhook_container --network network_zalo_5kaquarium --restart=unless-stopped -p 7000:7000 sepaywebhook
+docker run -dit --name sepaywebhook_container --network network_zalo_5kaquarium --restart=unless-stopped -p 7000:7000 --log-driver=json-file --log-opt max-size=10m --log-opt max-file=3 sepaywebhook
 docker logs -f sepaywebhook_container
