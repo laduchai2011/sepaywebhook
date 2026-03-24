@@ -28,7 +28,7 @@ COPY . .
 RUN npm run build
 
 # Mở port (nếu app chạy trên 3000)
-EXPOSE 4000
+EXPOSE 7000
 
 # Chạy ứng dụng
 # CMD ["node", "dist/src/index.js"]

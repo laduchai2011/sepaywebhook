@@ -1,5 +1,5 @@
-docker stop nodeserver_container
-docker rm nodeserver_container
-docker build -t nodeserver .
-docker run -dit --name nodeserver_container --network network_zalo_5kaquarium --restart=unless-stopped --memory=1024m --memory-swap=1024m -p 4000:4000 -v /root/photo5k:/app/data nodeserver
-docker logs -f nodeserver_container
+docker stop sepaywebhook_container
+docker rm sepaywebhook_container
+docker build -t sepaywebhook .
+docker run -dit --name sepaywebhook_container --network network_zalo_5kaquarium --restart=unless-stopped -p 7000:7000 sepaywebhook
+docker logs -f sepaywebhook_container
