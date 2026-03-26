@@ -2,9 +2,12 @@ import { mssql_server } from '@src/connect';
 import { Request, Response } from 'express';
 import MutateDB_CreatePayHook from '../../mutateDB/CreatePayHook';
 import MutateDB_UpdateAgentPaid from '../../mutateDB/UpdateAgentPaid';
+import MutateDB_UpdateOrderPaid from '../../mutateDB/UpdateOrderPaid';
 import { sendStringMessage } from '@src/messageQueue/Producer';
 import crypto from "crypto";
 import dotenv from 'dotenv';
+import { PayHookField } from '@src/dataStruct/payHook';
+
 dotenv.config();
 
 const SECRET = process.env.SEPAY_SECRET!;
@@ -40,10 +43,10 @@ class Handle_SepayWebhook {
         this._mssql_server.init();
     }
 
-    main = async (req: Request, res: Response) => {
+    main = async (req: Request<any, any, PayHookField>, res: Response) => {
         // console.log(req)
         // signature có thể là string | string[]
-        const headers = req.headers;
+        // const headers = req.headers;
         // console.log('headers', headers)
        
         const apiKey = getHeader(req.rawHeaders, 'Authorization');
@@ -72,6 +75,12 @@ class Handle_SepayWebhook {
 
         const content = req.body.content;
         console.log("content", content);
+
+        if(!content) {
+            console.log("Invalid content");
+            res.status(401).send("Invalid signature");
+            return;
+        }
 
         const match = content.match(/ztks\S*/);
 
@@ -109,7 +118,6 @@ class Handle_SepayWebhook {
                 
                 try {
                     const result1 = await mutateDB_createPayHook.run();
-                    console.log('result1', result1)
                     if (!(result1?.recordset.length && result1?.recordset.length > 0)) {
                         res.status(500).json({
                             message: 'Ghi payHook vào database không thành công !',
@@ -120,7 +128,6 @@ class Handle_SepayWebhook {
                     mutateDB_updateAgentPaid.set_connection_pool(connection_pool);
                     mutateDB_updateAgentPaid.setUpdateAgentPaidBody({id: agentPayId})
                     const result2 = await mutateDB_updateAgentPaid.run();
-                    console.log('result2', result2)
                     if (!(result2?.recordset.length && result2?.recordset.length > 0)) {
                         res.status(500).json({
                             message: 'Cập nhật agentPay và agent không thành công !',
@@ -148,7 +155,38 @@ class Handle_SepayWebhook {
                 payHookBody.agentPayId = null;
                 payHookBody.orderId = orderId;
                 mutateDB_createPayHook.setCreatePayHookBody(payHookBody);
-                break;
+                
+                try {
+                    const result1 = await mutateDB_createPayHook.run();
+                    if (!(result1?.recordset.length && result1?.recordset.length > 0)) {
+                        res.status(500).json({
+                            message: 'Ghi payHook vào database không thành công !',
+                        });
+                        return;
+                    }
+                    const mutateDB_updateOrderPaid = new MutateDB_UpdateOrderPaid();
+                    mutateDB_updateOrderPaid.set_connection_pool(connection_pool);
+                    mutateDB_updateOrderPaid.setUpdateOrderPaidBody({id: orderId, money: payHookBody.transferAmount})
+                    const result2 = await mutateDB_updateOrderPaid.run();
+                    if (!(result2?.recordset.length && result2?.recordset.length > 0)) {
+                        res.status(500).json({
+                            message: 'Cập nhật orderPay và agent không thành công !',
+                        });
+                        return;
+                    }
+
+                    // send message
+                    const agentPay = result2.recordset[0]
+                    sendStringMessage('orderPay_dev', JSON.stringify(agentPay))
+                    return
+                } catch (error) {
+                    console.error(error);
+                    res.status(500).json({
+                        message: 'Đã có lỗi xảy ra !',
+                        err: error
+                    });
+                    return;
+                }
             } 
             default: { 
                 //statements; 

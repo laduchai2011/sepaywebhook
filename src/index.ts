@@ -7,7 +7,7 @@ import { mssql_server } from '@src/connect';
 import { redis_server } from '@src/connect';
 import { rabbit_server } from '@src/connect';
 import ServiceRedis from '@src/cache/cacheRedis';
-import { connectMongo } from './connect/mongo';
+// import { connectMongo } from './connect/mongo';
 import { getEnv } from './mode';
 import { myEnv } from './mode/type';
 
@@ -73,7 +73,7 @@ app.use(`${apiString}/hello`, (req, res) => {
     const serviceRedis = ServiceRedis.getInstance();
     await serviceRedis.init();
 
-    await connectMongo();
+    // await connectMongo();
 
     if (services.includes('webhook')) {
         const service_webhook = (await import('./services/webhook')).default;
