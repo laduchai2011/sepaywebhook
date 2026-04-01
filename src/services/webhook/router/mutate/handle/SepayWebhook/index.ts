@@ -3,8 +3,9 @@ import { Request, Response } from 'express';
 import MutateDB_CreatePayHook from '../../mutateDB/CreatePayHook';
 import MutateDB_UpdateAgentPaid from '../../mutateDB/UpdateAgentPaid';
 import MutateDB_UpdateOrderPaid from '../../mutateDB/UpdateOrderPaid';
+import MutateDB_MoneyIn from '../../mutateDB/MoneyIn';
 import { sendStringMessage } from '@src/messageQueue/Producer';
-import crypto from "crypto";
+import crypto from 'crypto';
 import dotenv from 'dotenv';
 import { PayHookField } from '@src/dataStruct/payHook';
 
@@ -14,7 +15,7 @@ const SECRET = process.env.SEPAY_SECRET!;
 const rowBody = 'hello ztks';
 
 function signHmac(data: string, secret: string) {
-    return crypto.createHmac("sha256", secret).update(data).digest("hex");
+    return crypto.createHmac('sha256', secret).update(data).digest('hex');
 }
 
 function verifySignature(rawBody: string, signature: string, secret: string) {
@@ -33,7 +34,7 @@ function getHeader(rawHeaders: string[], key: string) {
 
 enum payTable {
     AGENT = 'agentPay',
-    ORDER = 'orderPay'
+    ORDER = 'orderPay',
 }
 
 class Handle_SepayWebhook {
@@ -48,14 +49,14 @@ class Handle_SepayWebhook {
         // signature có thể là string | string[]
         // const headers = req.headers;
         // console.log('headers', headers)
-       
+
         const apiKey = getHeader(req.rawHeaders, 'Authorization');
 
         if (!apiKey) {
-            console.log("apiKey undefine");
+            console.log('apiKey undefine');
             res.send('apiKey undefine');
             return;
-        } 
+        }
 
         let signature = '';
 
@@ -63,22 +64,22 @@ class Handle_SepayWebhook {
             signature = apiKey.slice(7);
         }
 
-        const isValid = verifySignature(rowBody, signature, SECRET)
-        
+        const isValid = verifySignature(rowBody, signature, SECRET);
+
         if (!isValid) {
-            console.log("Invalid signature");
-            res.status(401).send("Invalid signature");
+            console.log('Invalid signature');
+            res.status(401).send('Invalid signature');
             return;
         }
 
         console.log('Webhook từ SePay:', req.body);
 
         const content = req.body.content;
-        console.log("content", content);
+        console.log('content', content);
 
-        if(!content) {
-            console.log("Invalid content");
-            res.status(401).send("Invalid signature");
+        if (!content) {
+            console.log('Invalid content');
+            res.status(401).send('Invalid signature');
             return;
         }
 
@@ -87,35 +88,37 @@ class Handle_SepayWebhook {
         const result = match ? match[0] : null;
 
         if (!result) {
-            console.log("Invalid Content");
-            res.status(401).send("Invalid Content");
+            console.log('Invalid Content');
+            res.status(401).send('Invalid Content');
             return;
         }
 
         const parts = result.split('j');
 
-        console.log('parts', parts)
+        console.log('parts', parts);
 
         const payType = parts[1];
         const id = parts[2];
+        const walletId = Number(parts[3]);
 
         const mutateDB_createPayHook = new MutateDB_CreatePayHook();
         const connection_pool = this._mssql_server.get_connectionPool();
         if (!connection_pool) {
-            res.status(500).json({message: 'Kết nối cơ sở dữ liệu không thành công !'});
+            res.status(500).json({ message: 'Kết nối cơ sở dữ liệu không thành công !' });
             return;
-        } 
+        }
         mutateDB_createPayHook.set_connection_pool(connection_pool);
 
-        switch(payType) { 
-            case payTable.AGENT: { 
-                console.log('payTable.AGENT')
+        switch (payType) {
+            case payTable.AGENT: {
+                console.log('payTable.AGENT');
                 const agentPayId = Number(id);
                 const payHookBody = { ...req.body };
                 payHookBody.agentPayId = agentPayId;
                 payHookBody.orderId = null;
+                payHookBody.walletId = walletId;
                 mutateDB_createPayHook.setCreatePayHookBody(payHookBody);
-                
+
                 try {
                     const result1 = await mutateDB_createPayHook.run();
                     if (!(result1?.recordset.length && result1?.recordset.length > 0)) {
@@ -124,9 +127,10 @@ class Handle_SepayWebhook {
                         });
                         return;
                     }
+
                     const mutateDB_updateAgentPaid = new MutateDB_UpdateAgentPaid();
                     mutateDB_updateAgentPaid.set_connection_pool(connection_pool);
-                    mutateDB_updateAgentPaid.setUpdateAgentPaidBody({id: agentPayId})
+                    mutateDB_updateAgentPaid.setUpdateAgentPaidBody({ id: agentPayId });
                     const result2 = await mutateDB_updateAgentPaid.run();
                     if (!(result2?.recordset.length && result2?.recordset.length > 0)) {
                         res.status(500).json({
@@ -135,27 +139,39 @@ class Handle_SepayWebhook {
                         return;
                     }
 
+                    // const mutateDB_moneyIn = new MutateDB_MoneyIn();
+                    // mutateDB_moneyIn.set_connection_pool(connection_pool);
+                    // mutateDB_moneyIn.setMoneyInBody({ id: walletId, addedAmount: payHookBody.transferAmount });
+                    // const result3 = await mutateDB_moneyIn.run();
+                    // if (!(result3?.recordset.length && result3?.recordset.length > 0)) {
+                    //     res.status(500).json({
+                    //         message: 'Cập nhật MoneyIn không thành công !',
+                    //     });
+                    //     return;
+                    // }
+
                     // send message
-                    const agentPay = result2.recordset[0]
-                    sendStringMessage('agentPay_dev', JSON.stringify(agentPay))
-                    return
+                    const agentPay = result2.recordset[0];
+                    sendStringMessage('agentPay_dev', JSON.stringify(agentPay));
+                    return;
                 } catch (error) {
                     console.error(error);
                     res.status(500).json({
                         message: 'Đã có lỗi xảy ra !',
-                        err: error
+                        err: error,
                     });
                     return;
                 }
-            } 
-            case payTable.ORDER: { 
-                console.log('payTable.ORDER')
+            }
+            case payTable.ORDER: {
+                console.log('payTable.ORDER');
                 const orderId = Number(id);
                 const payHookBody = { ...req.body };
                 payHookBody.agentPayId = null;
                 payHookBody.orderId = orderId;
+                payHookBody.walletId = walletId;
                 mutateDB_createPayHook.setCreatePayHookBody(payHookBody);
-                
+
                 try {
                     const result1 = await mutateDB_createPayHook.run();
                     if (!(result1?.recordset.length && result1?.recordset.length > 0)) {
@@ -164,9 +180,10 @@ class Handle_SepayWebhook {
                         });
                         return;
                     }
+
                     const mutateDB_updateOrderPaid = new MutateDB_UpdateOrderPaid();
                     mutateDB_updateOrderPaid.set_connection_pool(connection_pool);
-                    mutateDB_updateOrderPaid.setUpdateOrderPaidBody({id: orderId, money: payHookBody.transferAmount})
+                    mutateDB_updateOrderPaid.setUpdateOrderPaidBody({ id: orderId, money: payHookBody.transferAmount });
                     const result2 = await mutateDB_updateOrderPaid.run();
                     if (!(result2?.recordset.length && result2?.recordset.length > 0)) {
                         res.status(500).json({
@@ -175,26 +192,37 @@ class Handle_SepayWebhook {
                         return;
                     }
 
+                    const mutateDB_moneyIn = new MutateDB_MoneyIn();
+                    mutateDB_moneyIn.set_connection_pool(connection_pool);
+                    mutateDB_moneyIn.setMoneyInBody({ id: walletId, addedAmount: payHookBody.transferAmount });
+                    const result3 = await mutateDB_moneyIn.run();
+                    if (!(result3?.recordset.length && result3?.recordset.length > 0)) {
+                        res.status(500).json({
+                            message: 'Cập nhật MoneyIn không thành công !',
+                        });
+                        return;
+                    }
+
                     // send message
-                    const agentPay = result2.recordset[0]
-                    sendStringMessage('orderPay_dev', JSON.stringify(agentPay))
-                    return
+                    const agentPay = result2.recordset[0];
+                    sendStringMessage('orderPay_dev', JSON.stringify(agentPay));
+                    return;
                 } catch (error) {
                     console.error(error);
                     res.status(500).json({
                         message: 'Đã có lỗi xảy ra !',
-                        err: error
+                        err: error,
                     });
                     return;
                 }
-            } 
-            default: { 
-                //statements; 
-                break; 
-            } 
-        } 
+            }
+            default: {
+                //statements;
+                break;
+            }
+        }
 
-        res.status(200).json({"success": true});
+        res.status(200).json({ success: true });
         return;
     };
 }
