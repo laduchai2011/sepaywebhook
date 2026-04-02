@@ -23,6 +23,7 @@ class MutateDB_MoneyIn {
                     .request()
                     .input('walletId', sql.Int, this._moneyInBody.walletId)
                     .input('addedAmount', sql.BigInt, this._moneyInBody.addedAmount)
+                    .input('payHookId', sql.BigInt, this._moneyInBody.payHookId ?? null)
                     .execute('MoneyIn');
 
                 return result;
