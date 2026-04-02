@@ -1,16 +1,33 @@
+import { BalanceFluctuationType, WalletType } from '.';
+
 export interface CreateWalletBodyField {
     amount: number;
-    type: string;
+    type: WalletType;
     accountId: number;
 }
 
 export interface MoneyInBodyField {
-    id: number;
+    walletId: number;
     addedAmount: number;
 }
 
 export interface MoneyOutBodyField {
+    walletId: number;
     subAmount: number;
-    type: string;
+}
+
+// export interface GetAllWalletsBodyField {
+//     accountId: number;
+// }
+
+export interface GetMyWalletWithTypeBodyField {
+    type: WalletType;
     accountId: number;
+}
+
+export interface GetBalanceFluctuationsByDateBodyField {
+    walletId: number;
+    type: BalanceFluctuationType | null;
+    fromDate: string;
+    toDate: string;
 }

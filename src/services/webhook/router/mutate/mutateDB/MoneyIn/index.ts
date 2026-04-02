@@ -21,7 +21,7 @@ class MutateDB_MoneyIn {
             try {
                 const result = await this._connectionPool
                     .request()
-                    .input('id', sql.Int, this._moneyInBody.id)
+                    .input('walletId', sql.Int, this._moneyInBody.walletId)
                     .input('addedAmount', sql.BigInt, this._moneyInBody.addedAmount)
                     .execute('MoneyIn');
 

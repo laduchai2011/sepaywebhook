@@ -194,7 +194,10 @@ class Handle_SepayWebhook {
 
                     const mutateDB_moneyIn = new MutateDB_MoneyIn();
                     mutateDB_moneyIn.set_connection_pool(connection_pool);
-                    mutateDB_moneyIn.setMoneyInBody({ id: walletId, addedAmount: payHookBody.transferAmount });
+                    mutateDB_moneyIn.setMoneyInBody({
+                        walletId: walletId,
+                        addedAmount: payHookBody.transferAmount,
+                    });
                     const result3 = await mutateDB_moneyIn.run();
                     if (!(result3?.recordset.length && result3?.recordset.length > 0)) {
                         res.status(500).json({
