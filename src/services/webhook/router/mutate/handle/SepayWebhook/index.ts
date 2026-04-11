@@ -2,8 +2,8 @@ import { mssql_server } from '@src/connect';
 import { Request, Response } from 'express';
 import MutateDB_CreatePayHook from '../../mutateDB/CreatePayHook';
 import MutateDB_UpdateAgentPaid from '../../mutateDB/UpdateAgentPaid';
-import MutateDB_UpdateOrderPaid from '../../mutateDB/UpdateOrderPaid';
-import MutateDB_MoneyIn from '../../mutateDB/MoneyIn';
+// import MutateDB_UpdateOrderPaid from '../../mutateDB/UpdateOrderPaid';
+// import MutateDB_MoneyIn from '../../mutateDB/MoneyIn';
 import MutateDB_PayOrder from '../../mutateDB/PayOrder';
 import { sendStringMessage } from '@src/messageQueue/Producer';
 import crypto from 'crypto';
@@ -182,16 +182,16 @@ class Handle_SepayWebhook {
                         return;
                     }
 
-                    const mutateDB_updateOrderPaid = new MutateDB_UpdateOrderPaid();
-                    mutateDB_updateOrderPaid.set_connection_pool(connection_pool);
-                    mutateDB_updateOrderPaid.setUpdateOrderPaidBody({ id: orderId, money: payHookBody.transferAmount });
-                    const result2 = await mutateDB_updateOrderPaid.run();
-                    if (!(result2?.recordset.length && result2?.recordset.length > 0)) {
-                        res.status(500).json({
-                            message: 'Cập nhật orderPay và agent không thành công !',
-                        });
-                        return;
-                    }
+                    // const mutateDB_updateOrderPaid = new MutateDB_UpdateOrderPaid();
+                    // mutateDB_updateOrderPaid.set_connection_pool(connection_pool);
+                    // mutateDB_updateOrderPaid.setUpdateOrderPaidBody({ id: orderId, money: payHookBody.transferAmount });
+                    // const result2 = await mutateDB_updateOrderPaid.run();
+                    // if (!(result2?.recordset.length && result2?.recordset.length > 0)) {
+                    //     res.status(500).json({
+                    //         message: 'Cập nhật orderPay và agent không thành công !',
+                    //     });
+                    //     return;
+                    // }
 
                     // const mutateDB_moneyIn = new MutateDB_MoneyIn();
                     // mutateDB_moneyIn.set_connection_pool(connection_pool);
@@ -224,7 +224,7 @@ class Handle_SepayWebhook {
                     }
 
                     // send message
-                    const agentPay = result2.recordset[0];
+                    const agentPay = result3.recordset[0];
                     sendStringMessage('orderPay_dev', JSON.stringify(agentPay));
                     return;
                 } catch (error) {

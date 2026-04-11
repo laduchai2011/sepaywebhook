@@ -1,5 +1,5 @@
 import sql from 'mssql';
-import { WalletField } from '@src/dataStruct/wallet';
+import { OrderField } from '@src/dataStruct/order';
 import { PayOrderBodyField } from '@src/dataStruct/wallet/body';
 
 class MutateDB_PayOrder {
@@ -16,7 +16,7 @@ class MutateDB_PayOrder {
         this._payOrderBody = payOrderBody;
     }
 
-    async run(): Promise<sql.IProcedureResult<WalletField> | undefined> {
+    async run(): Promise<sql.IProcedureResult<OrderField> | undefined> {
         if (this._connectionPool !== undefined && this._payOrderBody !== undefined) {
             try {
                 const result = await this._connectionPool
