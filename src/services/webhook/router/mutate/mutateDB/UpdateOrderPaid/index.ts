@@ -22,7 +22,7 @@ class MutateDB_UpdateOrderPaid {
                 const result = await this._connectionPool
                     .request()
                     .input('id', sql.Int, this._updateOrderPaidBody.id)
-                    .input('money', sql.BigInt, this._updateOrderPaidBody.money)
+                    .input('money', sql.Decimal(20, 2), this._updateOrderPaidBody.money)
                     .execute('UpdateOrderPaid');
 
                 return result;
