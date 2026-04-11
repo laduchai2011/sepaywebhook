@@ -4,6 +4,7 @@ import MutateDB_CreatePayHook from '../../mutateDB/CreatePayHook';
 import MutateDB_UpdateAgentPaid from '../../mutateDB/UpdateAgentPaid';
 import MutateDB_UpdateOrderPaid from '../../mutateDB/UpdateOrderPaid';
 import MutateDB_MoneyIn from '../../mutateDB/MoneyIn';
+import MutateDB_PayOrder from '../../mutateDB/PayOrder';
 import { sendStringMessage } from '@src/messageQueue/Producer';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
@@ -192,14 +193,29 @@ class Handle_SepayWebhook {
                         return;
                     }
 
-                    const mutateDB_moneyIn = new MutateDB_MoneyIn();
-                    mutateDB_moneyIn.set_connection_pool(connection_pool);
-                    mutateDB_moneyIn.setMoneyInBody({
+                    // const mutateDB_moneyIn = new MutateDB_MoneyIn();
+                    // mutateDB_moneyIn.set_connection_pool(connection_pool);
+                    // mutateDB_moneyIn.setMoneyInBody({
+                    //     walletId: walletId,
+                    //     addedAmount: payHookBody.transferAmount,
+                    //     payHookId: payHookBody.id,
+                    // });
+                    // const result3 = await mutateDB_moneyIn.run();
+                    // if (!(result3?.recordset.length && result3?.recordset.length > 0)) {
+                    //     res.status(500).json({
+                    //         message: 'Cập nhật MoneyIn không thành công !',
+                    //     });
+                    //     return;
+                    // }
+                    const mutateDB_payOrder = new MutateDB_PayOrder();
+                    mutateDB_payOrder.set_connection_pool(connection_pool);
+                    mutateDB_payOrder.setPayOrderBody({
                         walletId: walletId,
                         addedAmount: payHookBody.transferAmount,
+                        orderId: orderId,
                         payHookId: payHookBody.id,
                     });
-                    const result3 = await mutateDB_moneyIn.run();
+                    const result3 = await mutateDB_payOrder.run();
                     if (!(result3?.recordset.length && result3?.recordset.length > 0)) {
                         res.status(500).json({
                             message: 'Cập nhật MoneyIn không thành công !',

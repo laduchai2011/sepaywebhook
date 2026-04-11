@@ -32,3 +32,21 @@ export interface GetBalanceFluctuationsByDateBodyField {
     fromDate: string;
     toDate: string;
 }
+
+export interface GetBalanceFluctuationLatestDayBodyField {
+    walletId: number;
+    type: BalanceFluctuationType | null;
+}
+
+export interface PayAgentFromWalletBodyField {
+    walletId: number;
+    agentPayId: number;
+    accountId: number;
+}
+
+export interface PayOrderBodyField {
+    walletId: number;
+    addedAmount: number;
+    orderId: number;
+    payHookId: number;
+}
