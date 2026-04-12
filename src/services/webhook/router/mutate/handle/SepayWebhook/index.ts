@@ -2,8 +2,6 @@ import { mssql_server } from '@src/connect';
 import { Request, Response } from 'express';
 import MutateDB_CreatePayHook from '../../mutateDB/CreatePayHook';
 import MutateDB_UpdateAgentPaid from '../../mutateDB/UpdateAgentPaid';
-// import MutateDB_UpdateOrderPaid from '../../mutateDB/UpdateOrderPaid';
-// import MutateDB_MoneyIn from '../../mutateDB/MoneyIn';
 import MutateDB_PayOrder from '../../mutateDB/PayOrder';
 import { sendStringMessage } from '@src/messageQueue/Producer';
 import crypto from 'crypto';
@@ -154,7 +152,7 @@ class Handle_SepayWebhook {
                     // send message
                     const agentPay = result2.recordset[0];
                     sendStringMessage('agentPay_dev', JSON.stringify(agentPay));
-                    return;
+                    break;
                 } catch (error) {
                     console.error(error);
                     res.status(500).json({
@@ -226,7 +224,7 @@ class Handle_SepayWebhook {
                     // send message
                     const agentPay = result3.recordset[0];
                     sendStringMessage('orderPay_dev', JSON.stringify(agentPay));
-                    return;
+                    break;
                 } catch (error) {
                     console.error(error);
                     res.status(500).json({
