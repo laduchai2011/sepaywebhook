@@ -35,6 +35,7 @@ class MutateDB_CreatePayHook {
                     .input('accumulated', sql.Decimal(20, 2), this._createPayHookBody.accumulated)
                     .input('agentPayId', sql.Int, this._createPayHookBody.agentPayId)
                     .input('orderId', sql.Int, this._createPayHookBody.orderId)
+                    .input('requireTakeMoneyId', sql.Int, this._createPayHookBody.requireTakeMoneyId)
                     .input('walletId', sql.Int, this._createPayHookBody.walletId)
                     .execute('CreatePayHook');
 

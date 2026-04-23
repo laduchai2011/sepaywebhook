@@ -25,9 +25,9 @@ const services = (process.env.SERVICES ?? '').split(',').map((s) => s.trim());
 const app: Express = express();
 
 const isProduct = process.env.NODE_ENV === 'production';
-const port = isProduct ? process.env.PORT : 7000;
+const port = isProduct ? process.env.PORT : 7001;
 
-const apiString = isProduct ? '' : '/api';
+const apiString = getEnv() !== myEnv.Dev ? '' : '/api';
 const prefix = getEnv() === myEnv.Dev ? '/api' : '';
 
 app.use(cookieParser());
