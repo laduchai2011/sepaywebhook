@@ -70,3 +70,16 @@ export interface ForgetPasswordBodyField {
     password: string;
     phone: string;
 }
+
+export interface GetMyRecommendBodyField {
+    accountId: number;
+}
+
+export interface AddYourRecommendBodyField {
+    yourCode: string;
+    accountId: number;
+}
+
+export interface GetMyAccountInformationBodyField {
+    accountId: number;
+}

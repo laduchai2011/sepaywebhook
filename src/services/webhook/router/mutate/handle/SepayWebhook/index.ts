@@ -3,12 +3,18 @@ import { Request, Response } from 'express';
 import MutateDB_CreatePayHook from '../../mutateDB/CreatePayHook';
 import MutateDB_UpdateAgentPaid from '../../mutateDB/UpdateAgentPaid';
 import MutateDB_PayOrder from '../../mutateDB/PayOrder';
+import MutateDB_TakeMoney from '../../mutateDB/TakeMoney';
 import { sendStringMessage } from '@src/messageQueue/Producer';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 import { PayHookField } from '@src/dataStruct/payHook';
+import { TakeMoneyBodyField } from '@src/dataStruct/wallet/body';
+import { getEnv } from '@src/mode';
+import { myEnv } from '@src/mode/type';
 
 dotenv.config();
+
+const prefix = getEnv() !== myEnv.Prod ? '_dev' : '';
 
 const SECRET = process.env.SEPAY_SECRET!;
 const rowBody = 'hello ztks';
@@ -34,6 +40,7 @@ function getHeader(rawHeaders: string[], key: string) {
 enum payTable {
     AGENT = 'agentPay',
     ORDER = 'orderPay',
+    TAKE_MONEY = 'takeMoney',
 }
 
 class Handle_SepayWebhook {
@@ -116,6 +123,7 @@ class Handle_SepayWebhook {
                 payHookBody.agentPayId = agentPayId;
                 payHookBody.orderId = null;
                 payHookBody.walletId = walletId;
+                payHookBody.requireTakeMoneyId = null;
                 mutateDB_createPayHook.setCreatePayHookBody(payHookBody);
 
                 try {
@@ -138,20 +146,9 @@ class Handle_SepayWebhook {
                         return;
                     }
 
-                    // const mutateDB_moneyIn = new MutateDB_MoneyIn();
-                    // mutateDB_moneyIn.set_connection_pool(connection_pool);
-                    // mutateDB_moneyIn.setMoneyInBody({ id: walletId, addedAmount: payHookBody.transferAmount });
-                    // const result3 = await mutateDB_moneyIn.run();
-                    // if (!(result3?.recordset.length && result3?.recordset.length > 0)) {
-                    //     res.status(500).json({
-                    //         message: 'Cập nhật MoneyIn không thành công !',
-                    //     });
-                    //     return;
-                    // }
-
                     // send message
                     const agentPay = result2.recordset[0];
-                    sendStringMessage('agentPay_dev', JSON.stringify(agentPay));
+                    sendStringMessage(`agentPay${prefix}`, JSON.stringify(agentPay));
                     break;
                 } catch (error) {
                     console.error(error);
@@ -169,6 +166,7 @@ class Handle_SepayWebhook {
                 payHookBody.agentPayId = null;
                 payHookBody.orderId = orderId;
                 payHookBody.walletId = walletId;
+                payHookBody.requireTakeMoneyId = null;
                 mutateDB_createPayHook.setCreatePayHookBody(payHookBody);
 
                 try {
@@ -180,31 +178,6 @@ class Handle_SepayWebhook {
                         return;
                     }
 
-                    // const mutateDB_updateOrderPaid = new MutateDB_UpdateOrderPaid();
-                    // mutateDB_updateOrderPaid.set_connection_pool(connection_pool);
-                    // mutateDB_updateOrderPaid.setUpdateOrderPaidBody({ id: orderId, money: payHookBody.transferAmount });
-                    // const result2 = await mutateDB_updateOrderPaid.run();
-                    // if (!(result2?.recordset.length && result2?.recordset.length > 0)) {
-                    //     res.status(500).json({
-                    //         message: 'Cập nhật orderPay và agent không thành công !',
-                    //     });
-                    //     return;
-                    // }
-
-                    // const mutateDB_moneyIn = new MutateDB_MoneyIn();
-                    // mutateDB_moneyIn.set_connection_pool(connection_pool);
-                    // mutateDB_moneyIn.setMoneyInBody({
-                    //     walletId: walletId,
-                    //     addedAmount: payHookBody.transferAmount,
-                    //     payHookId: payHookBody.id,
-                    // });
-                    // const result3 = await mutateDB_moneyIn.run();
-                    // if (!(result3?.recordset.length && result3?.recordset.length > 0)) {
-                    //     res.status(500).json({
-                    //         message: 'Cập nhật MoneyIn không thành công !',
-                    //     });
-                    //     return;
-                    // }
                     const mutateDB_payOrder = new MutateDB_PayOrder();
                     mutateDB_payOrder.set_connection_pool(connection_pool);
                     mutateDB_payOrder.setPayOrderBody({
@@ -223,7 +196,59 @@ class Handle_SepayWebhook {
 
                     // send message
                     const agentPay = result3.recordset[0];
-                    sendStringMessage('orderPay_dev', JSON.stringify(agentPay));
+                    sendStringMessage(`orderPay${prefix}`, JSON.stringify(agentPay));
+                    break;
+                } catch (error) {
+                    console.error(error);
+                    res.status(500).json({
+                        message: 'Đã có lỗi xảy ra !',
+                        err: error,
+                    });
+                    return;
+                }
+            }
+            case payTable.TAKE_MONEY: {
+                console.log('payTable.TAKE_MONEY');
+                console.log('payTable.AGENT');
+                const requireTakeMoneyId = Number(id);
+                const payHookBody = { ...req.body };
+                payHookBody.agentPayId = null;
+                payHookBody.orderId = null;
+                payHookBody.walletId = walletId;
+                payHookBody.requireTakeMoneyId = requireTakeMoneyId;
+                mutateDB_createPayHook.setCreatePayHookBody(payHookBody);
+
+                try {
+                    const result1 = await mutateDB_createPayHook.run();
+                    if (!(result1?.recordset.length && result1?.recordset.length > 0)) {
+                        res.status(500).json({
+                            message: 'Ghi payHook vào database không thành công !',
+                        });
+                        return;
+                    }
+
+                    const mutateDB_takeMoney = new MutateDB_TakeMoney();
+                    mutateDB_takeMoney.set_connection_pool(connection_pool);
+                    const takeMoneyBody: TakeMoneyBodyField = {
+                        amount: payHookBody.transferAmount,
+                        bankId: Number(parts[5]),
+                        payHookId: payHookBody.id,
+                        requireTakeMoneyId: requireTakeMoneyId,
+                        walletId: walletId,
+                        accountId: Number(parts[4]),
+                    };
+                    mutateDB_takeMoney.setTakeMoneyBody(takeMoneyBody);
+                    const result2 = await mutateDB_takeMoney.run();
+                    if (!(result2?.recordset.length && result2?.recordset.length > 0)) {
+                        res.status(500).json({
+                            message: 'Cập nhật TakeMoney không thành công !',
+                        });
+                        return;
+                    }
+
+                    // send message
+                    // const wallet = result2.recordset[0];
+                    // sendStringMessage(`takeMoney${prefix}`, JSON.stringify(wallet));
                     break;
                 } catch (error) {
                     console.error(error);
