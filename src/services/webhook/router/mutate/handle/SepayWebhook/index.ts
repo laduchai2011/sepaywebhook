@@ -195,8 +195,8 @@ class Handle_SepayWebhook {
                     }
 
                     // send message
-                    const agentPay = result3.recordset[0];
-                    sendStringMessage(`orderPay${prefix}`, JSON.stringify(agentPay));
+                    const order = result3.recordset[0];
+                    sendStringMessage(`orderPay${prefix}`, JSON.stringify(order));
                     break;
                 } catch (error) {
                     console.error(error);
