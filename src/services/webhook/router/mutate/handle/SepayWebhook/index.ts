@@ -15,8 +15,9 @@ import { myEnv } from '@src/mode/type';
 dotenv.config();
 
 const prefix = getEnv() !== myEnv.Prod ? '_dev' : '';
+const isProd = getEnv() === myEnv.Prod;
 
-const SECRET = process.env.SEPAY_SECRET!;
+const SECRET = isProd ? process.env.SEPAY_SECRET! : 'ztks_taokosao';
 const rowBody = 'hello ztks';
 
 function signHmac(data: string, secret: string) {
@@ -199,8 +200,8 @@ class Handle_SepayWebhook {
                     const order = result3.recordset[0];
                     const payload = {
                         accountId: accountId,
-                        order: order
-                    }
+                        order: order,
+                    };
                     sendStringMessage(`orderPay${prefix}`, JSON.stringify(payload));
                     break;
                 } catch (error) {
