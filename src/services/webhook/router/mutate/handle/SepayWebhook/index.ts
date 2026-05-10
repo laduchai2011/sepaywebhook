@@ -14,7 +14,7 @@ import { myEnv } from '@src/mode/type';
 
 dotenv.config();
 
-const prefix = getEnv() !== myEnv.Prod ? '_dev' : '';
+const prefix = getEnv() !== myEnv.Prod ? 'dev' : '';
 const isProd = getEnv() === myEnv.Prod;
 
 const SECRET = isProd ? process.env.SEPAY_SECRET! : 'ztks_taokosao';
@@ -149,7 +149,7 @@ class Handle_SepayWebhook {
 
                     // send message
                     const agentPay = result2.recordset[0];
-                    sendStringMessage(`agentPay${prefix}`, JSON.stringify(agentPay));
+                    sendStringMessage(`agentPay_${prefix}`, JSON.stringify(agentPay));
                     break;
                 } catch (error) {
                     console.error(error);
@@ -202,7 +202,7 @@ class Handle_SepayWebhook {
                         accountId: accountId,
                         order: order,
                     };
-                    sendStringMessage(`orderPay${prefix}`, JSON.stringify(payload));
+                    sendStringMessage(`orderPay_${prefix}`, JSON.stringify(payload));
                     break;
                 } catch (error) {
                     console.error(error);
