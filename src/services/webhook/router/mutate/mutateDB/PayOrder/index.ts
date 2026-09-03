@@ -1,6 +1,12 @@
 import sql from 'mssql';
 import { OrderField } from '@src/dataStruct/order';
 import { PayOrderBodyField } from '@src/dataStruct/wallet/body';
+import { UpdateStatisticsBodyField } from '@src/dataStruct/statistics/body';
+
+type PayOrderResult = {
+    recordsets: [OrderField[], UpdateStatisticsBodyField[]];
+    recordset: OrderField[];
+};
 
 class MutateDB_PayOrder {
     private _connectionPool: sql.ConnectionPool | undefined;
@@ -16,7 +22,7 @@ class MutateDB_PayOrder {
         this._payOrderBody = payOrderBody;
     }
 
-    async run(): Promise<sql.IProcedureResult<OrderField> | undefined> {
+    async run(): Promise<PayOrderResult | undefined> {
         if (this._connectionPool !== undefined && this._payOrderBody !== undefined) {
             try {
                 const result = await this._connectionPool
@@ -27,7 +33,7 @@ class MutateDB_PayOrder {
                     .input('payHookId', sql.Int, this._payOrderBody.payHookId)
                     .execute('PayOrder');
 
-                return result;
+                return result as unknown as PayOrderResult;
             } catch (error) {
                 console.error(error);
             }

@@ -4,11 +4,12 @@ import MutateDB_CreatePayHook from '../../mutateDB/CreatePayHook';
 import MutateDB_UpdateAgentPaid from '../../mutateDB/UpdateAgentPaid';
 import MutateDB_PayOrder from '../../mutateDB/PayOrder';
 import MutateDB_TakeMoney from '../../mutateDB/TakeMoney';
-import { sendStringMessage } from '@src/messageQueue/Producer';
+import { sendStringMessage, sendStatistics } from '@src/messageQueue/Producer';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 import { PayHookField } from '@src/dataStruct/payHook';
 import { TakeMoneyBodyField } from '@src/dataStruct/wallet/body';
+import { UpdateStatisticsBodyField } from '@src/dataStruct/statistics/body';
 import { getEnv } from '@src/mode';
 import { myEnv } from '@src/mode/type';
 
@@ -198,6 +199,11 @@ class Handle_SepayWebhook {
 
                     // send message
                     const order = result3.recordset[0];
+                    const updateStatisticsBody: UpdateStatisticsBodyField = {
+                        ...result3.recordsets[1][0],
+                    };
+                    sendStatistics(`statistics_${prefix}`, updateStatisticsBody);
+
                     const payload = {
                         accountId: accountId,
                         order: order,
