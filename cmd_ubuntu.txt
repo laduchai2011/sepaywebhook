@@ -3,3 +3,9 @@ docker rm sepaywebhook_container
 docker build -t sepaywebhook .
 docker run -dit --name sepaywebhook_container --network network_ztks --restart=unless-stopped -p 7000:7000 --log-driver=json-file --log-opt max-size=10m --log-opt max-file=3 sepaywebhook
 docker logs -f sepaywebhook_container
+
+docker stop sepaywebhookdev_container
+docker rm sepaywebhookdev_container
+docker build -t sepaywebhookdev .
+docker run -dit --name sepaywebhookdev_container --network network_ztks --restart=unless-stopped -p 7001:7001 --log-driver=json-file --log-opt max-size=10m --log-opt max-file=3 sepaywebhookdev
+docker logs -f sepaywebhookdev_container
